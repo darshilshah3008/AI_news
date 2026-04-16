@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{project.name}}</h1>
+<p>{{project.description}}</p>
+<div class="cta-row">
+<a class="btn secondary" href="/signals?project_id={{project.id}}">Signal Feed</a>
+<a class="btn secondary" href="/weekly-brief?project_id={{project.id}}">Weekly Brief</a>
+<a class="btn secondary" href="/timeline?project_id={{project.id}}">Timeline</a>
+</div>
+
+<h2>Top signals today</h2>
+<div class="grid">
+{% for s in top_signals %}
+<div class="card">
+  <span class="pill {{s.action|lower}}">{{s.action}}</span>
+  <h3>{{s.title}}</h3>
+  <p>{{s.summary or "No summary provided."}}</p>
+  <p><strong>Relevance:</strong> {{s.relevance_score}} | <strong>Importance:</strong> {{s.importance_score}}</p>
+  <p><strong>Why it matters:</strong> {{s.reasoning}}</p>
+  <a href="{{s.url}}" target="_blank">Source</a>
+</div>
+{% endfor %}
+</div>
+
+<h2>Recommended actions this week</h2>
+<ul class="card">
+{% for s in relevant %}<li>[{{s.action}}] {{s.title}}</li>{% endfor %}
+</ul>
+
+<h2>Noise to ignore / watch</h2>
+<ul class="card">
+{% for s in watch %}<li>[{{s.action}}] {{s.title}}</li>{% endfor %}
+</ul>
+
+<h2>Categories / trends</h2>
+<div class="card">
+{% for k,v in trends.items() %}<p>{{k}}: {{v}}</p>{% endfor %}
+</div>
+{% endblock %}

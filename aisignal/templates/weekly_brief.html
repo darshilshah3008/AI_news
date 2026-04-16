@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Weekly Brief</h1>
+<div class="cta-row">
+  <a class="btn" href="/export/project?project_id={{project_id}}">Export project brief</a>
+</div>
+<pre class="card pre">{{brief}}</pre>
+{% endblock %}

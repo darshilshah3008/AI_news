@@ -1,93 +1,113 @@
-"""AI News Agent — CLI entry point.
+"""AI Signal OS CLI and ingestion utility."""
 
-Usage:
-    python -m AI_news                    Fetch all AI news and display report
-    python -m AI_news --save             Fetch and save report to reports/ folder
-    python -m AI_news --category research  Filter by category (research/daily/industry/developer)
-    python -m AI_news --items 10         Max articles per source (default: 5)
-"""
+from __future__ import annotations
 
 import argparse
-import logging
-import sys
 from pathlib import Path
 
-from .src.fetcher import fetch_all
-from .src.reporter import generate_report
-from .src.sources import (
-    ALL_SOURCES,
-    RESEARCH_SOURCES,
-    DAILY_SOURCES,
-    INDUSTRY_SOURCES,
-    DEVELOPER_SOURCES,
+from .aisignal import db
+from .aisignal.services import (
+    build_timeline,
+    build_weekly_brief,
+    export_markdown,
+    get_recommendations,
+    ingest_dir,
+    ingest_file,
+    seed_projects,
 )
-
-CATEGORY_MAP = {
-    "research": RESEARCH_SOURCES,
-    "daily": DAILY_SOURCES,
-    "industry": INDUSTRY_SOURCES,
-    "developer": DEVELOPER_SOURCES,
-    "all": ALL_SOURCES,
-}
-
-REPORTS_DIR = Path(__file__).parent / "reports"
+from .aisignal.web import run_server
 
 
-def setup_logging(verbose: bool = False):
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+def cmd_init_db(_: argparse.Namespace) -> None:
+    db.init_db()
+    seed_projects()
+    print("Initialized database and sample projects.")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="AI News Agent — Fetch and summarize AI news from top sources",
-        prog="python -m AI_news",
-    )
-    parser.add_argument(
-        "--category", "-c",
-        choices=list(CATEGORY_MAP.keys()),
-        default="all",
-        help="Filter by category (default: all)",
-    )
-    parser.add_argument(
-        "--items", "-n",
-        type=int,
-        default=5,
-        help="Max articles per source (default: 5)",
-    )
-    parser.add_argument(
-        "--save", "-s",
-        action="store_true",
-        help="Save report to AI_news/reports/ folder",
-    )
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable debug logging",
-    )
+def cmd_ingest_file(args: argparse.Namespace) -> None:
+    db.init_db()
+    n = ingest_file(Path(args.path))
+    print(f"Ingested {n} articles from {args.path}")
 
+
+def cmd_ingest_dir(args: argparse.Namespace) -> None:
+    db.init_db()
+    n = ingest_dir(Path(args.path))
+    print(f"Ingested {n} articles from directory {args.path}")
+
+
+def cmd_list_articles(_: argparse.Namespace) -> None:
+    rows = db.list_articles()
+    for r in rows[:100]:
+        print(f"[{r['id']}] {r['report_date']} | {r['category']} | {r['title']}")
+    print(f"Total: {len(rows)}")
+
+
+def cmd_recommend(args: argparse.Namespace) -> None:
+    recs = get_recommendations(args.project_id, limit=args.limit)
+    for r in recs:
+        print(f"[{r['action']}] rel={r['relevance_score']} imp={r['importance_score']} :: {r['title']}")
+
+
+def cmd_export_timeline(args: argparse.Namespace) -> None:
+    content = build_timeline(args.project_id)
+    path = export_markdown(content, f"project_{args.project_id}_timeline.md")
+    print(path)
+
+
+def cmd_export_project(args: argparse.Namespace) -> None:
+    content = build_weekly_brief(args.project_id)
+    path = export_markdown(content, f"project_{args.project_id}_brief.md")
+    print(path)
+
+
+def cmd_runserver(args: argparse.Namespace) -> None:
+    run_server(host=args.host, port=args.port)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="python -m AI_news", description="AI Signal OS")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("init-db", help="Initialize SQLite DB and sample projects")
+    p.set_defaults(func=cmd_init_db)
+
+    p = sub.add_parser("ingest-file", help="Ingest one markdown report")
+    p.add_argument("path")
+    p.set_defaults(func=cmd_ingest_file)
+
+    p = sub.add_parser("ingest-dir", help="Ingest all markdown reports from directory")
+    p.add_argument("path", default="reports", nargs="?")
+    p.set_defaults(func=cmd_ingest_dir)
+
+    p = sub.add_parser("list-articles", help="List ingested article records")
+    p.set_defaults(func=cmd_list_articles)
+
+    p = sub.add_parser("recommend", help="Generate recommendations for a project")
+    p.add_argument("project_id", type=int)
+    p.add_argument("--limit", type=int, default=25)
+    p.set_defaults(func=cmd_recommend)
+
+    p = sub.add_parser("export-timeline", help="Export project timeline markdown")
+    p.add_argument("project_id", type=int)
+    p.set_defaults(func=cmd_export_timeline)
+
+    p = sub.add_parser("export-project", help="Export project weekly brief markdown")
+    p.add_argument("project_id", type=int)
+    p.set_defaults(func=cmd_export_project)
+
+    p = sub.add_parser("runserver", help="Run web app locally")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.set_defaults(func=cmd_runserver)
+
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
-    setup_logging(args.verbose)
-
-    sources = CATEGORY_MAP[args.category]
-    print(f"Fetching AI news from {len(sources)} sources...\n")
-
-    articles = fetch_all(sources=sources, max_items=args.items)
-
-    if not articles:
-        print("No articles fetched. Check your internet connection or try again.")
-        sys.exit(1)
-
-    save_dir = REPORTS_DIR if args.save else None
-    report = generate_report(articles, save_dir=save_dir)
-    print(report)
-
-    if args.save:
-        print(f"\nReport saved to {REPORTS_DIR}/")
+    args.func(args)
 
 
 if __name__ == "__main__":
