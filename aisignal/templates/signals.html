@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Signal Feed</h1>
+<div class="cta-row">
+  <a class="btn secondary" href="/signals?project_id={{project_id}}">All</a>
+  <a class="btn secondary" href="/signals?project_id={{project_id}}&action=BUILD">BUILD</a>
+  <a class="btn secondary" href="/signals?project_id={{project_id}}&action=TEST">TEST</a>
+  <a class="btn secondary" href="/signals?project_id={{project_id}}&action=IGNORE">IGNORE</a>
+</div>
+{% for s in signals %}
+  <div class="card">
+    <span class="pill {{s.action|lower}}">{{s.action}}</span>
+    <h3>{{s.title}}</h3>
+    <p>{{s.summary or 'No summary available.'}}</p>
+    <p>Source: {{s.source}} | Category: {{s.category}}</p>
+    <p>Relevance {{s.relevance_score}} | Confidence {{s.confidence_score}}</p>
+    <p>Project impact: {{s.reasoning}}</p>
+    <a href="{{s.url}}" target="_blank">Read</a>
+  </div>
+{% endfor %}
+{% endblock %}

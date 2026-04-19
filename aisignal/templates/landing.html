@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero card">
+  <h1>Stop tracking AI news. Start knowing what to build next.</h1>
+  <p>Turn AI noise into product decisions. AI Signal OS scores every signal for your project and tells you what to BUILD, TEST, LEARN, WATCH, or IGNORE.</p>
+  <div class="cta-row">
+    <a class="btn" href="/projects/new">Create project profile</a>
+    {% if projects %}<a class="btn secondary" href="/dashboard?project_id={{projects[0].id}}">View demo dashboard</a>{% endif %}
+  </div>
+</section>
+<section>
+  <h2>Demo profiles</h2>
+  <div class="grid">
+    {% for p in projects %}
+      <a class="card" href="/dashboard?project_id={{p.id}}"><h3>{{p.name}}</h3><p>{{p.description}}</p></a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
