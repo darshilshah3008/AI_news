@@ -123,16 +123,21 @@ def build_weekly_brief(project_id: int) -> str:
         "## Top Relevant Developments",
     ]
     for r in top:
-        lines.append(f"- **{r['title']}** ({r['source']}) — {r['action']} | relevance {r['relevance_score']}")
+        title_md = f"[**{r['title']}**]({r['url']})" if r.get("url") else f"**{r['title']}**"
+        lines.append(f"- {title_md} ({r['source']}) — {r['action']} | relevance {r['relevance_score']}")
         lines.append(f"  - Why: {r['reasoning']}")
 
     lines += ["", "## Best-Fit Models/Tools/Frameworks to Test"]
     for r in test_candidates:
-        lines.append(f"- {r['title']} ({r['url']})")
+        title_md = f"[{r['title']}]({r['url']})" if r.get("url") else r["title"]
+        lines.append(f"- {title_md}")
 
     lines += ["", "## Suggested Architecture Direction", "- Favor modular pipelines with measurable latency and memory budgets.", "- Keep optional cloud fallback; preserve local-first path for critical workflows."]
     lines += ["", "## Prototype Next Steps", "- Build 2 rapid experiments from BUILD signals.", "- Convert 3 TEST signals into benchmark tasks.", "- Add instrumentation for quality, latency, and cost."]
-    lines += ["", "## What to Ignore", *(f"- {r['title']}" for r in ignore)]
+    lines += ["", "## What to Ignore"]
+    for r in ignore:
+        title_md = f"[{r['title']}]({r['url']})" if r.get("url") else r["title"]
+        lines.append(f"- {title_md}")
     lines += ["", "## Risks / Open Questions", "- Which model updates materially improve quality on your own eval set?", "- Are infra-only announcements creating lock-in risk?"]
 
     return "\n".join(lines)
