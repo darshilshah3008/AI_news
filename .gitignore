@@ -35,3 +35,7 @@ htmlcov/
 
 # Reports (generated output — optionally exclude)
 # reports/
+
+# Generated runtime data (DB + exported briefs) — produced on each CI run
+data/ai_signal_os.db
+data/exports/
