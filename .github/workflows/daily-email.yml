@@ -1,10 +1,20 @@
 name: Daily AI News Email
 
 # 01:30 UTC = 07:00 IST. GitHub Actions cron can drift 5-15 min under load.
-# Manual trigger is also enabled via workflow_dispatch.
+# Also fires on push to main (so code fixes auto-trigger an email) and
+# manual workflow_dispatch from the Actions tab.
 on:
   schedule:
     - cron: "30 1 * * *"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/daily-email.yml"
+      - "scripts/send_daily_email.py"
+      - "aisignal/**"
+      - "reports/**"
+      - "__main__.py"
+      - "requirements.txt"
   workflow_dispatch:
 
 jobs:
