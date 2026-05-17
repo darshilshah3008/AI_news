@@ -1,11 +1,14 @@
 name: Daily AI News Email
 
-# 01:30 UTC = 07:00 IST. GitHub Actions cron can drift 5-15 min under load.
+# 22:00 UTC = 5:00 PM CDT (US Central, DST active). When DST ends in
+# November, this will fire at 4:00 PM CST until DST resumes in March —
+# bump cron to "0 23 * * *" if you want 5:00 PM year-round during CST.
+# GitHub Actions cron has no timezone support and can drift 5-15 min under load.
 # Also fires on push to main (so code fixes auto-trigger an email) and
 # manual workflow_dispatch from the Actions tab.
 on:
   schedule:
-    - cron: "30 1 * * *"
+    - cron: "0 22 * * *"
   push:
     branches: [main]
     paths:
