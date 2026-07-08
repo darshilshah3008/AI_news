@@ -1,0 +1,26 @@
+name: Daily Morning Brief
+
+on:
+  schedule:
+    # GitHub Actions cron is ALWAYS in UTC. 11:00 UTC = 06:00 US Central (CDT, summer).
+    # In winter (CST) 06:00 Central = 12:00 UTC. Adjust the hour for your timezone.
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}   # run manually from the Actions tab to test
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install anthropic pillow
+      - name: Build and email the Morning Brief
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python scripts/daily_brief.py
